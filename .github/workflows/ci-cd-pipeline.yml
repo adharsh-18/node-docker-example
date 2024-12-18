@@ -3,36 +3,23 @@ name: CI/CD Pipeline
 on:
   push:
     branches:
-      - main  # Trigger the pipeline on pushes to the 'main' branch
+      - main  # Trigger on push to 'main'
   pull_request:
     branches:
-      - main  # Trigger on pull requests to the 'main' branch
+      - main  # Trigger on pull request to 'main'
 
 jobs:
   build:
-    runs-on: ubuntu-latest  # Run on Ubuntu (could be any OS)
+    runs-on: self-hosted  # Use the self-hosted runner
 
     steps:
-    # Checkout code
-    - name: Checkout code
-      uses: actions/checkout@v3
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-    # Set up Docker
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v2
+      - name: Build Docker image
+        run: |
+          docker build -t node-app .
 
-    # Build the Docker image
-    - name: Build Docker image
-      run: |
-        docker build -t node-app .
-
-    # Deploy to local machine using SSH
-    - name: Deploy to local machine
-      env:
-        SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
-      run: |
-        mkdir -p ~/.ssh
-        echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa  # Fetch private key from secrets
-        chmod 600 ~/.ssh/id_rsa
-        ssh-keyscan -H localhost >> ~/.ssh/known_hosts  # Avoid SSH verification prompt
-        ssh -i ~/.ssh/id_rsa username@localhost 'bash /path/to/deploy.sh'  # Trigger local deployment
+      - name: Run Docker container
+        run: |
+          docker run -d -p 3000:3000 node-app
