@@ -1,0 +1,9 @@
+﻿{
+  "agentId": 2,
+  "agentName": "LATITUDE-5401",
+  "poolId": 1,
+  "poolName": "Default",
+  "serverUrl": "https://pipelinesghubeus10.actions.githubusercontent.com/n1YGhz3Vfw6pfN4WulVsrpJyok9dUgLz1h0A3TtlHfesDA61Vb/",
+  "gitHubUrl": "https://github.com/adharsh-18/node-docker-example",
+  "workFolder": "_work"
+}
