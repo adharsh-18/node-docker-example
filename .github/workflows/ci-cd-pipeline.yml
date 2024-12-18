@@ -1,72 +1,38 @@
-name: Node.js CI/CD Pipeline with Docker
+name: CI/CD Pipeline
 
 on:
   push:
     branches:
-      - main  # Trigger on push to the main branch
+      - main  # Trigger the pipeline on pushes to the 'main' branch
   pull_request:
     branches:
-      - main  # Trigger on pull requests to the main branch
+      - main  # Trigger on pull requests to the 'main' branch
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest  # Run on Ubuntu (could be any OS)
 
     steps:
-      # Step 1: Checkout the code from the GitHub repository
-      - name: Checkout code
-        uses: actions/checkout@v3
+    # Checkout code
+    - name: Checkout code
+      uses: actions/checkout@v3
 
-      # Step 2: Set up Docker Buildx for multi-platform support
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
+    # Set up Docker
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v2
 
-      # Step 3: Cache Node.js dependencies to speed up builds
-      - name: Cache Node modules
-        uses: actions/cache@v3
-        with:
-          path: ~/.npm
-          key: ${{ runner.os }}-node-modules-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-node-modules-
+    # Build the Docker image
+    - name: Build Docker image
+      run: |
+        docker build -t node-app .
 
-      # Step 4: Set up Node.js environment
-      - name: Set up Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: '18'  # Set the desired Node.js version
-
-      # Step 5: Install dependencies
-      - name: Install dependencies
-        run: npm install
-
-      # Step 6: Build Docker image
-      - name: Build Docker image
-        run: docker build -t node-app .
-
-      # Step 7: Run tests (if any tests are set up)
-      - name: Run tests
-        run: npm test
-
-      # Step 8: Log in to Docker Hub (if you want to push the image to Docker Hub)
-      - name: Log in to Docker Hub
-        uses: docker/login-action@v2
-        with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
-
-      # Step 9: Push Docker image to Docker Hub (optional)
-      - name: Push Docker image
-        run: docker tag node-app:latest my-dockerhub-username/node-app:latest
-      - run: docker push my-dockerhub-username/node-app:latest
-
-      # Step 10: Deploy to server (optional, for example using SSH to a remote server)
-      - name: Deploy to server (example)
-        env:
-          SSH_HOST: ${{ secrets.SSH_HOST }}
-          SSH_USER: ${{ secrets.SSH_USER }}
-          PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
-        run: |
-          echo "$PRIVATE_KEY" > private_key.pem
-          chmod 600 private_key.pem
-          ssh -i private_key.pem $SSH_USER@$SSH_HOST "docker pull my-dockerhub-username/node-app:latest && docker run -d -p 3000:3000 my-dockerhub-username/node-app:latest"
+    # Deploy to local machine using SSH
+    - name: Deploy to local machine
+      env:
+        SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+      run: |
+        mkdir -p ~/.ssh
+        echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa  # Fetch private key from secrets
+        chmod 600 ~/.ssh/id_rsa
+        ssh-keyscan -H localhost >> ~/.ssh/known_hosts  # Avoid SSH verification prompt
+        ssh -i ~/.ssh/id_rsa username@localhost 'bash /path/to/deploy.sh'  # Trigger local deployment
